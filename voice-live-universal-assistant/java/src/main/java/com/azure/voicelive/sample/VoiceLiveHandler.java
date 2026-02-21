@@ -9,7 +9,6 @@ import java.util.function.Consumer;
 import com.azure.ai.voicelive.VoiceLiveAsyncClient;
 import com.azure.ai.voicelive.VoiceLiveClientBuilder;
 import com.azure.ai.voicelive.VoiceLiveSessionAsyncClient;
-import com.azure.ai.voicelive.models.AssistantMessageItem;
 import com.azure.ai.voicelive.models.AudioEchoCancellation;
 import com.azure.ai.voicelive.models.AudioInputTranscriptionOptions;
 import com.azure.ai.voicelive.models.AudioInputTranscriptionOptionsModel;
@@ -25,8 +24,6 @@ import com.azure.ai.voicelive.models.InteractionModality;
 import com.azure.ai.voicelive.models.OpenAIVoice;
 import com.azure.ai.voicelive.models.OpenAIVoiceName;
 import com.azure.ai.voicelive.models.OutputAudioFormat;
-import com.azure.ai.voicelive.models.OutputTextContentPart;
-import com.azure.ai.voicelive.models.ResponseCreateParams;
 import com.azure.ai.voicelive.models.ServerEventType;
 import com.azure.ai.voicelive.models.ServerVadTurnDetection;
 import com.azure.ai.voicelive.models.SessionUpdate;
@@ -61,10 +58,10 @@ public class VoiceLiveHandler {
     private final SessionConfig config;
 
     private VoiceLiveAsyncClient client;
-    private VoiceLiveSessionAsyncClient session;
+    private volatile VoiceLiveSessionAsyncClient session;
     private Disposable eventSubscription;
     private volatile boolean running = false;
-    private boolean greetingSent = false;
+    private volatile boolean greetingSent = false;
     private final StringBuilder assistantTranscript = new StringBuilder();
 
     public VoiceLiveHandler(String clientId, String endpoint, Object credential,
@@ -286,13 +283,7 @@ public class VoiceLiveHandler {
                     ? config.getGreetingText()
                     : "Welcome! I'm here to help you get started.";
 
-            AssistantMessageItem preGenMsg = new AssistantMessageItem(
-                    List.of(new OutputTextContentPart(text)));
-            ResponseCreateParams params = new ResponseCreateParams()
-                    .setPreGeneratedAssistantMessage(preGenMsg);
-
-            session.startResponse(new VoiceLiveSessionOptions()).block();
-            // Use raw JSON for pre-generated greeting since startResponse(VoiceLiveSessionOptions) doesn't accept ResponseCreateParams
+            // Use raw JSON for pre-generated greeting since the typed API doesn't accept ResponseCreateParams directly
             String json = String.format(
                     "{\"type\":\"response.create\",\"response\":{\"pre_generated_assistant_message\":{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"%s\"}]}}}",
                     escapeJson(text));
@@ -352,8 +343,8 @@ public class VoiceLiveHandler {
 
         send("status", "state", "listening");
 
-        // Proactive greeting — trigger once per session, model mode only
-        if (config.isProactiveGreeting() && !greetingSent && "model".equals(config.getMode())) {
+        // Proactive greeting — trigger once per session
+        if (config.isProactiveGreeting() && !greetingSent) {
             greetingSent = true;
             if ("pregenerated".equals(config.getGreetingType())) {
                 sendPreGeneratedGreeting();
