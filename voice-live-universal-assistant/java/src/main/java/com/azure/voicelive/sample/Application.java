@@ -82,6 +82,12 @@ public class Application implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Serve from static/ directory (classpath or filesystem)
+        registry.addResourceHandler("/assets/**")
+                .addResourceLocations(
+                        "classpath:/static/assets/",
+                        "file:static/assets/",
+                        "file:../frontend/dist/assets/")
+                .setCachePeriod(31536000);  // 1 year — Vite hashes filenames
         registry.addResourceHandler("/**")
                 .addResourceLocations(
                         "classpath:/static/",
@@ -90,16 +96,24 @@ public class Application implements WebMvcConfigurer {
                 .resourceChain(true);
     }
 
-    // SPA fallback — serve index.html for unmatched routes
-    @GetMapping(value = {"/", "/{path:[^\\.]*}", "/{path:(?!api|ws|health|config|languages).*}/**"})
+    /**
+     * SPA fallback — serve index.html for client-side routes.
+     * Only matches paths WITHOUT file extensions so /assets/*.js|css are served by the resource handler.
+     */
+    @GetMapping(value = {"/{path:[^\\.]*}", "/{path:[^\\.]*}/{sub:[^\\.]*}", "/{path:[^\\.]*}/{sub:[^\\.]*}/{rest:[^\\.]*}"})
     public ResponseEntity<Resource> spaFallback() {
+        return serveIndex();
+    }
+
+    private ResponseEntity<Resource> serveIndex() {
+        // Try classpath first (Docker / packaged JAR)
         Resource index = new ClassPathResource("static/index.html");
         if (index.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(index);
         }
-        // Try filesystem locations
+        // Try filesystem locations (local dev)
         for (String loc : List.of("static/index.html", "../frontend/dist/index.html")) {
             Resource file = new org.springframework.core.io.FileSystemResource(loc);
             if (file.exists()) {
@@ -108,9 +122,7 @@ public class Application implements WebMvcConfigurer {
                         .body(file);
             }
         }
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(null);
+        return ResponseEntity.notFound().build();
     }
 
     // -- REST endpoints (identical to Python) ------------------------------
