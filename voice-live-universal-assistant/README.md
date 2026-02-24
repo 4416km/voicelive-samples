@@ -168,7 +168,7 @@ voice-live-universal-assistant/
 │   └── README.md              # Python-specific docs
 ├── java/                      # Java backend (Spring Boot + Voice Live SDK)
 │   ├── src/                   # Spring Boot application source
-│   ├── pom.xml                # Maven config (azure-ai-voicelive 1.0.0-beta.4)
+│   ├── pom.xml                # Maven config (azure-ai-voicelive 1.0.0-beta.5)
 │   ├── KNOWN_ISSUES.md        # SDK feature gaps and workarounds
 │   ├── .env.sample            # Environment variable template
 │   └── README.md              # Java-specific docs
@@ -320,6 +320,19 @@ The frontend and backend communicate over WebSocket at `/ws/{clientId}`.
 | Server → Client | `stop_playback` | Stop audio playback (barge-in) |
 | Server → Client | `session_stopped` | Session ended |
 | Server → Client | `error` | Error message |
+
+## SDK Versions & Known Issues
+
+| Backend | SDK | Version | Notes |
+|---------|-----|---------|-------|
+| Python  | `azure-ai-voicelive` | 1.0.0b1 | API version pinned to `2026-01-01-preview` in `connect()` — required for interim response and agent mode |
+| Java    | `azure-ai-voicelive` | 1.0.0-beta.5 | Service version pinned to `V2026_01_01_PREVIEW` — SDK defaults to GA which breaks agent/interim features. See [java/KNOWN_ISSUES.md](java/KNOWN_ISSUES.md) |
+
+### Frontend UX Guards
+
+- **Interim Response** is disabled (greyed out) when a realtime model is selected in model mode — it only works with agent mode or text models using cascaded pipelines (Azure Speech transcription).
+- **Start Session** button is disabled when in agent mode and Agent Name or Project are empty, with a helper message directing the user to Settings.
+- **Transcription model** is auto-corrected to `azure-speech` when a text model is selected (cascaded pipelines only support `azure-speech`).
 
 ## License
 

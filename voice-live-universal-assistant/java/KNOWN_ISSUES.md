@@ -12,7 +12,15 @@ The following issues from beta.4 have been resolved:
 
 ## Remaining Issues
 
-### 1. .env File Loading
+### 1. API Version Pinning (Critical)
+
+**Issue:** `VoiceLiveServiceVersion.getLatest()` returns `V2025_10_01` (GA), not the preview version.
+
+**Impact:** Agent mode fails with `"Failed to initialize AI agent"`. Interim response and pre-generated greeting also break without the preview API.
+
+**Workaround:** The backend explicitly sets `.serviceVersion(VoiceLiveServiceVersion.V2026_01_01_PREVIEW)` on the `VoiceLiveClientBuilder`. This will be removable once the SDK defaults to the correct version.
+
+### 2. .env File Loading
 
 **Issue:** Java doesn't have a built-in `dotenv` equivalent. The Python backend uses `python-dotenv`.
 
@@ -20,7 +28,7 @@ The following issues from beta.4 have been resolved:
 
 **Workaround:** Environment variable lookups check `System.getenv()` first, then fall back to `System.getProperty()` (set by the `.env` loader). For production, set environment variables directly.
 
-### 2. Netty Version Mismatch Warning
+### 3. Netty Version Mismatch Warning
 
 **Issue:** Spring Boot 3.3.6 bundles Netty 4.1.115.Final, while the Azure SDK wants 4.1.130.Final.
 
