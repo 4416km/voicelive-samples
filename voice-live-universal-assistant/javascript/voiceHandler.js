@@ -438,12 +438,17 @@ export class VoiceHandler {
   }
 
   _getTranscriptionOptions() {
-    // Auto-correct transcribeModel for cascaded (text) models
+    // Auto-correct transcribeModel for cascaded (text) models.
+    // In agent mode, we don't know which model the agent uses internally —
+    // default to azure-speech to avoid cascaded pipeline errors.
     const MULTIMODAL = ["gpt-realtime", "gpt-realtime-mini", "phi4-mm-realtime", "phi4-mini"];
-    if (!MULTIMODAL.includes(this.config.model) && this.config.transcribeModel !== "azure-speech") {
-      console.log(`[${this.clientId}] Auto-corrected transcribeModel to azure-speech for cascaded model ${this.config.model}`);
-      this.config.transcribeModel = "azure-speech";
-      this.config.inputLanguage = "";
+    if (this.config.mode === "agent" || (!MULTIMODAL.includes(this.config.model) && this.config.transcribeModel !== "azure-speech")) {
+      if (this.config.transcribeModel !== "azure-speech") {
+        const reason = this.config.mode === "agent" ? "agent mode" : `cascaded model ${this.config.model}`;
+        console.log(`[${this.clientId}] Auto-corrected transcribeModel to azure-speech (${reason})`);
+        this.config.transcribeModel = "azure-speech";
+        this.config.inputLanguage = "";
+      }
     }
     const opts = {
       model: this.config.transcribeModel || "gpt-4o-transcribe",

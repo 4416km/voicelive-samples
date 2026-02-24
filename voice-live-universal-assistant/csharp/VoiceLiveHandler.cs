@@ -236,13 +236,20 @@ public class VoiceLiveHandler
             options.InputAudioNoiseReduction = new AudioNoiseReduction(AudioNoiseReductionType.AzureDeepNoiseSuppression);
         }
 
-        // Auto-correct transcribeModel for cascaded (text) models
+        // Auto-correct transcribeModel for cascaded (text) models.
+        // In agent mode, we don't know which model the agent uses internally —
+        // default to azure-speech to avoid "Only 'azure-speech' and 'mai-ears-1'
+        // are supported in cascaded pipelines" errors.
         var multimodal = new[] { "gpt-realtime", "gpt-realtime-mini", "phi4-mm-realtime", "phi4-mini" };
-        if (!multimodal.Contains(_config.Model) && _config.TranscribeModel != "azure-speech")
+        if (_config.Mode == "agent" || (!multimodal.Contains(_config.Model) && _config.TranscribeModel != "azure-speech"))
         {
-            _logger.LogInformation("[{ClientId}] Auto-corrected transcribeModel to azure-speech for cascaded model {Model}", _clientId, _config.Model);
-            _config.TranscribeModel = "azure-speech";
-            _config.InputLanguage = "";
+            if (_config.TranscribeModel != "azure-speech")
+            {
+                _logger.LogInformation("[{ClientId}] Auto-corrected transcribeModel to azure-speech ({Reason})",
+                    _clientId, _config.Mode == "agent" ? "agent mode" : $"cascaded model {_config.Model}");
+                _config.TranscribeModel = "azure-speech";
+                _config.InputLanguage = "";
+            }
         }
 
         // Transcription — enabled in both modes for user speech display
