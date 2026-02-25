@@ -122,4 +122,4 @@ The server serves the built frontend from `./static/` or `../frontend/dist/`.
 
 ## Known Issues
 
-> **API version pinning:** The Node.js SDK defaults to the GA API version (`2025-10-01`), which breaks `interimResponse` and some agent features. The backend explicitly passes `apiVersion: "2026-01-01-preview"` to the `VoiceLiveClient` constructor until this is fixed in a future SDK release.
+No JavaScript-specific SDK limitations at this time. All frontend features are supported.

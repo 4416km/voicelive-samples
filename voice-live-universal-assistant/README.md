@@ -135,7 +135,7 @@ mvn spring-boot:run
 
 Open **http://localhost:8000** in your browser.
 
-> **Note:** See [java/KNOWN_ISSUES.md](java/KNOWN_ISSUES.md) for SDK feature gaps in the current beta release.
+> **Note:** See [java/KNOWN_ISSUES.md](java/KNOWN_ISSUES.md) for Java-specific ecosystem notes.
 
 ## Quick Start (JavaScript / Node.js)
 
@@ -390,12 +390,14 @@ The frontend and backend communicate over WebSocket at `/ws/{clientId}`.
 
 ## SDK Versions & Known Issues
 
-| Backend | SDK | Version | Notes |
-|---------|-----|---------|-------|
-| Python  | `azure-ai-voicelive` | 1.0.0b1 | API version pinned to `2026-01-01-preview` in `connect()` — required for interim response and agent mode |
-| Java    | `azure-ai-voicelive` | 1.0.0-beta.5 | Service version pinned to `V2026_01_01_PREVIEW` — SDK defaults to GA which breaks agent/interim features. See [java/KNOWN_ISSUES.md](java/KNOWN_ISSUES.md) |
-| JavaScript | `@azure/ai-voicelive` | 1.0.0-beta.3 | API version pinned to `2026-01-01-preview` via client options. Node.js 20+ required |
-| C#      | `Azure.AI.VoiceLive` | 1.1.0-beta.2 | Service version pinned to `V2026_01_01_PREVIEW`. Interim response not yet supported — see [csharp/KNOWN_ISSUES.md](csharp/KNOWN_ISSUES.md) |
+All backends pin the API version to `2026-01-01-preview` (the SDK defaults to GA which lacks agent mode and interim response support).
+
+| Backend | SDK | Version | Language-Specific Notes |
+|---------|-----|---------|------------------------|
+| Python  | `azure-ai-voicelive` | 1.0.0b1 | No known limitations |
+| Java    | `azure-ai-voicelive` | 1.0.0-beta.5 | `.env` loading via custom parser; Netty version mismatch warning — see [java/KNOWN_ISSUES.md](java/KNOWN_ISSUES.md) |
+| JavaScript | `@azure/ai-voicelive` | 1.0.0-beta.3 | Node.js 20+ required. No known limitations |
+| C#      | `Azure.AI.VoiceLive` | 1.1.0-beta.2 | Interim response not supported (SDK gap) — see [csharp/KNOWN_ISSUES.md](csharp/KNOWN_ISSUES.md) |
 
 ### Frontend UX Guards
 
