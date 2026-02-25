@@ -416,6 +416,10 @@ All backends pin the API version to `2026-01-01-preview` (the SDK defaults to GA
 | Echo cancellation | ✅ | ✅ | ✅ | ✅ |
 | Noise reduction | ✅ | ✅ | ✅ | ✅ |
 
+## Future Improvements
+
+- **Agent mode fail-fast:** When `mode=agent` but `agentName` or `projectName` are missing, the C# and Java backends silently fall back to model mode. The frontend already prevents this (Start button is disabled until both fields are set), but the backends should return an explicit error instead of downgrading. Python and JavaScript pass the config through and let the SDK validate.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.

@@ -120,7 +120,8 @@ public class VoiceLiveHandler {
                 if (config.getFoundryResourceOverride() != null && !config.getFoundryResourceOverride().isBlank()) {
                     agentConfig.setFoundryResourceOverride(config.getFoundryResourceOverride());
                 }
-                if (config.getAuthIdentityClientId() != null && !config.getAuthIdentityClientId().isBlank()) {
+                if (config.getAuthIdentityClientId() != null && !config.getAuthIdentityClientId().isBlank()
+                        && config.getFoundryResourceOverride() != null && !config.getFoundryResourceOverride().isBlank()) {
                     agentConfig.setAuthenticationIdentityClientId(config.getAuthIdentityClientId());
                 }
                 session = client.startSession(agentConfig).block();

@@ -133,7 +133,8 @@ public class VoiceLiveHandler
                     agentConfig.ConversationId = _config.ConversationId;
                 if (!string.IsNullOrWhiteSpace(_config.FoundryResourceOverride))
                     agentConfig.FoundryResourceOverride = _config.FoundryResourceOverride;
-                if (!string.IsNullOrWhiteSpace(_config.AuthIdentityClientId))
+                if (!string.IsNullOrWhiteSpace(_config.AuthIdentityClientId)
+                    && !string.IsNullOrWhiteSpace(_config.FoundryResourceOverride))
                     agentConfig.AuthenticationIdentityClientId = _config.AuthIdentityClientId;
 
                 _session = await _client.StartSessionAsync(agentConfig);
@@ -323,7 +324,7 @@ public class VoiceLiveHandler
                     {
                         type = "message",
                         role = "assistant",
-                        content = new[] { new { type = "text", text } },
+                        content = new[] { new { type = "output_text", text } },
                     },
                 },
             };

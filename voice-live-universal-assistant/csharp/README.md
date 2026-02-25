@@ -117,7 +117,7 @@ cp .env.sample .env
 dotnet run
 ```
 
-The server serves the built frontend from `./static/` or `../frontend/dist/`.
+The server serves the built frontend from `wwwroot/` or `../frontend/dist/`.
 
 ## Docker
 
