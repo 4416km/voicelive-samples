@@ -24,7 +24,7 @@ Unlike the agent quickstart, this flow connects directly to a model (for example
 npm install
 ```
 
-If native audio modules cannot compile in your environment, you can still run a cloud connectivity smoke test with `--no-audio`.
+If native audio modules cannot compile in your environment, you can still run a cloud connectivity smoke test with `--no-audio`. For automated Windows setup (Node.js, SoX, Build Tools), see the [helper scripts](../helper-scripts/).
 
 - **Create a `.env` file** in this folder:
 
@@ -85,12 +85,6 @@ By default, the assistant speaks first with a dynamically generated welcome mess
 node model-quickstart.js
 ```
 
-To disable the greeting:
-
-```bash
-node model-quickstart.js --no-greeting
-```
-
 ### Proactive greeting (pre-defined text)
 
 Send a deterministic, branded greeting instead of LLM-generated:
@@ -108,11 +102,9 @@ node model-quickstart.js --greeting-text "Welcome! I'm your AI assistant. How ca
 - `--instructions`: System instructions for the model session
 - `--audio-input-device`: Explicit SoX input device name (use when default device is not configured)
 - `--list-audio-devices`: List available audio input devices on Windows and exit
-- `--no-greeting`: Skip the proactive greeting at session start
 - `--greeting-text`: Send a pre-defined greeting instead of LLM-generated
 - `--use-token-credential`: Use `DefaultAzureCredential` instead of API key
 - `--no-audio`: Connect and configure session without mic/speaker (for smoke tests)
-- `-v, --verbose`: Enable verbose event logging
 
 ## What This Sample Demonstrates
 
@@ -128,7 +120,6 @@ node model-quickstart.js --greeting-text "Welcome! I'm your AI assistant. How ca
 - Proactive greeting support (default: on):
   - LLM-generated (default) — adaptive, context-aware greetings
   - Pre-defined (`--greeting-text`) — deterministic, branded messaging
-  - Disable with `--no-greeting`
 - Conversation and transcript logging to `logs/`
 
 ## Troubleshooting

@@ -39,11 +39,9 @@ function printUsage() {
   console.log("  --instructions <text>       System instructions for the assistant");
   console.log("  --audio-input-device <name> Explicit SoX input device name (Windows)");
   console.log("  --list-audio-devices        List available audio input devices and exit");
-  console.log("  --no-greeting               Skip the proactive greeting at session start");
   console.log("  --greeting-text <text>      Send a pre-defined greeting instead of LLM-generated");
   console.log("  --use-token-credential      Use Azure credential instead of API key");
   console.log("  --no-audio                  Connect and configure session without mic/speaker");
-  console.log("  -v, --verbose               Enable verbose event logging");
   console.log("  -h, --help                  Show this help text");
 }
 
@@ -59,11 +57,9 @@ function parseArguments(argv) {
       "You are a helpful AI assistant. Respond naturally and conversationally. Keep your responses concise but engaging.",
     audioInputDevice: process.env.AUDIO_INPUT_DEVICE,
     listAudioDevices: false,
-    noGreeting: false,
     greetingText: undefined,
     useTokenCredential: false,
     noAudio: false,
-    verbose: false,
     help: false,
   };
 
@@ -91,9 +87,6 @@ function parseArguments(argv) {
       case "--list-audio-devices":
         parsed.listAudioDevices = true;
         break;
-      case "--no-greeting":
-        parsed.noGreeting = true;
-        break;
       case "--greeting-text":
         parsed.greetingText = argv[++i];
         break;
@@ -102,10 +95,6 @@ function parseArguments(argv) {
         break;
       case "--no-audio":
         parsed.noAudio = true;
-        break;
-      case "--verbose":
-      case "-v":
-        parsed.verbose = true;
         break;
       case "--help":
       case "-h":
@@ -276,11 +265,6 @@ class AudioProcessor {
       bitwidth: 16,
     };
 
-    if (this._inputDevice) {
-      recorderOptions.device = this._inputDevice;
-      console.log(`[audio] Using explicit input device: ${this._inputDevice}`);
-    }
-
     this._recorder = this._recordModule.record(recorderOptions);
 
     const recorderStream = this._recorder.stream();
@@ -386,9 +370,7 @@ class BasicModelVoiceAssistant {
     this.voice = options.voice;
     this.instructions = options.instructions;
     this.audioInputDevice = options.audioInputDevice;
-    this.noGreeting = options.noGreeting;
     this.greetingText = options.greetingText;
-    this.verbose = options.verbose;
     this.noAudio = options.noAudio;
 
     this._session = null;
@@ -396,7 +378,6 @@ class BasicModelVoiceAssistant {
     this._audio = new AudioProcessor(!options.noAudio, options.audioInputDevice);
     this._activeResponse = false;
     this._responseApiDone = false;
-    this._sessionConfigured = false;
     this._greetingSent = false;
   }
 
@@ -429,7 +410,6 @@ class BasicModelVoiceAssistant {
         // Proactive greeting — fire once per session
         if (!this._greetingSent) {
           this._greetingSent = true;
-          await this._sendProactiveGreeting();
         }
       },
 
@@ -501,9 +481,7 @@ class BasicModelVoiceAssistant {
       },
 
       onConversationItemCreated: async (event) => {
-        if (this.verbose) {
-          console.log(`[event] Conversation item created: ${event.item?.id ?? ""}`);
-        }
+        console.log(`[event] Conversation item created: ${event.item?.id ?? ""}`);
       },
 
     });
@@ -511,9 +489,12 @@ class BasicModelVoiceAssistant {
     await session.connect();
     console.log("[init] Connected to VoiceLive session websocket");
 
-    if (!this._sessionConfigured) {
-      this._sessionConfigured = true;
-      await this._setupSession();
+    await this._setupSession();
+
+    // Proactive greeting
+    if (!this._greetingSent) {
+      this._greetingSent = true;
+      await this._sendProactiveGreeting();
     }
 
     await this._audio.startPlayback();
@@ -549,12 +530,9 @@ class BasicModelVoiceAssistant {
 
   /**
    * Send a proactive greeting when the session starts.
-   * Option 1 (--greeting-text): deterministic, pre-generated assistant message.
-   * Option 2 (--proactive-greeting): LLM-generated greeting (matches AgentsNewQuickstart).
+   * Supports pre-defined (--greeting-text) or LLM-generated (default).
    */
   async _sendProactiveGreeting() {
-    if (this.noGreeting) return;
-
     const session = this._session;
 
     if (this.greetingText) {
@@ -682,14 +660,12 @@ async function main() {
     ? new DefaultAzureCredential()
     : new AzureKeyCredential(args.apiKey);
 
-  console.log("Environment variables:");
+  console.log("Configuration:");
   console.log(`  AZURE_VOICELIVE_ENDPOINT: ${args.endpoint}`);
   console.log(`  AZURE_VOICELIVE_MODEL: ${args.model}`);
   console.log(`  AZURE_VOICELIVE_VOICE: ${args.voice}`);
   console.log(`  AUDIO_INPUT_DEVICE: ${args.audioInputDevice ?? '(not set)'}`);
-  if (args.noGreeting) {
-    console.log(`  Proactive greeting: disabled`);
-  } else if (args.greetingText) {
+  if (args.greetingText) {
     console.log(`  Proactive greeting: pre-defined`);
   } else {
     console.log(`  Proactive greeting: LLM-generated (default)`);
@@ -706,10 +682,8 @@ async function main() {
     voice: args.voice,
     instructions: args.instructions,
     audioInputDevice: args.audioInputDevice,
-    noGreeting: args.noGreeting,
     greetingText: args.greetingText,
     noAudio: args.noAudio,
-    verbose: args.verbose,
   });
 
   try {

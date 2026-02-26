@@ -26,7 +26,7 @@ function Test-CommandExists {
   return $null -ne (Get-Command $CommandName -ErrorAction SilentlyContinue)
 }
 
-Write-Host "Checking prerequisites for ModelQuickstart..." -ForegroundColor Cyan
+Write-Host "Checking prerequisites for JavaScript Voice Live quickstarts..." -ForegroundColor Cyan
 Write-Host "Location: $PWD" -ForegroundColor DarkGray
 
 # Node.js
@@ -84,7 +84,7 @@ if (Test-Path $vswhere) {
 # npm modules in this project
 $pkgJson = Join-Path $PWD 'package.json'
 if (-not (Test-Path $pkgJson)) {
-  Add-Result -Name 'ModelQuickstart folder' -Ok $false -Details 'package.json not found in current directory' -Fix 'Run this script from javascript/voice-live-quickstarts/ModelQuickstart'
+  Add-Result -Name 'Quickstart folder' -Ok $false -Details 'package.json not found in current directory' -Fix 'Run this script from a quickstart folder (e.g. ModelQuickstart or AgentsNewQuickstart)'
 } else {
   if ($RequireAudioDeps) {
     $speakerOk = Test-Path (Join-Path $PWD "node_modules\speaker")
@@ -111,6 +111,5 @@ if ($fails.Count -gt 0) {
 }
 
 Write-Host ""
-Write-Host "All required prerequisites are installed. You can run:" -ForegroundColor Green
-Write-Host "node .\model-quickstart.js --verbose" -ForegroundColor Green
+Write-Host "All required prerequisites are installed." -ForegroundColor Green
 exit 0

@@ -267,7 +267,8 @@ function Invoke-Checks {
   if ($DryRun) {
     Write-Host "[DRY-RUN] Would run: powershell -ExecutionPolicy Bypass -File .\\check-prereqs.ps1" -ForegroundColor Yellow
   } else {
-    & powershell -ExecutionPolicy Bypass -File .\check-prereqs.ps1
+    $checkerPath = Join-Path $PSScriptRoot 'check-prereqs.ps1'
+    & powershell -ExecutionPolicy Bypass -File $checkerPath
   }
 }
 
@@ -288,7 +289,7 @@ try {
   Install-ProjectDeps
   Invoke-Checks
 
-  Write-Host "\nSetup complete. Run: node .\\model-quickstart.js --verbose" -ForegroundColor Green
+  Write-Host "\nSetup complete." -ForegroundColor Green
 }
 catch {
   Write-Host "\nSetup failed: $($_.Exception.Message)" -ForegroundColor Red

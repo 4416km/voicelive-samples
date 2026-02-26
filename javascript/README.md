@@ -24,7 +24,13 @@ A Node.js quickstart demonstrating direct Voice Live model integration without F
 - Direct model-mode session (`gpt-realtime` by default)
 - Custom instructions and voice configuration
 - API key or Azure credential authentication
+- Proactive greeting (LLM-generated or pre-defined)
+- Explicit microphone device selection
 - Barge-in handling and conversation logging
+
+### [Helper Scripts](./voice-live-quickstarts/helper-scripts/)
+
+Shared PowerShell scripts for setting up and verifying Windows development prerequisites (Node.js, SoX, VS Build Tools).
 
 ### [Basic Web Voice Assistant](./basic-web-voice-assistant/)
 
