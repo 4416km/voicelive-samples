@@ -184,6 +184,8 @@ async def start_session(client_id: str, config: dict, websocket: WebSocket):
     await cleanup_client(client_id)
 
     # Prefer credentials from frontend config, fall back to env vars
+    mode = config.get("mode", "model")
+    is_agent_mode = mode in {"agent", "agent-v2"}
     endpoint = config.get("endpoint", "").strip() or os.getenv("AZURE_VOICELIVE_ENDPOINT", "")
     api_key = config.get("apiKey", "").strip() or os.getenv("AZURE_VOICELIVE_API_KEY", "")
     entra_token = config.get("entraToken", "").strip()
@@ -195,7 +197,8 @@ async def start_session(client_id: str, config: dict, websocket: WebSocket):
         })
         return
 
-    # Create credential: prefer Entra token (for agent modes), then API key, then DefaultAzureCredential
+    # Create credential.
+    # Agent modes require Entra-based auth. Model mode can use API key or DefaultAzureCredential.
     if entra_token:
         from azure.core.credentials import AccessToken
         import time
@@ -211,7 +214,7 @@ async def start_session(client_id: str, config: dict, websocket: WebSocket):
             async def __aexit__(self, *args): pass
 
         credential = _StaticTokenCredential(entra_token)
-    elif api_key:
+    elif not is_agent_mode and api_key:
         credential = AzureKeyCredential(api_key)
     else:
         try:
@@ -220,7 +223,7 @@ async def start_session(client_id: str, config: dict, websocket: WebSocket):
         except ImportError:
             await send_ws_message(websocket, {
                 "type": "session_error",
-                "error": "No credentials provided. Enter Subscription Key or Entra Token in the UI.",
+                "error": "No supported credentials available. Agent modes require Entra authentication. Model mode supports Subscription Key or Entra authentication.",
             })
             return
 
