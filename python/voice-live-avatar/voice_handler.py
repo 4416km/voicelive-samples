@@ -9,6 +9,7 @@ import json
 import logging
 import base64
 import os
+from importlib.metadata import version as package_version
 from typing import Any, Callable, Optional
 
 from azure.ai.voicelive.aio import connect
@@ -70,25 +71,46 @@ class VoiceSessionHandler:
             self.is_running = True
             model = self.config.get("model", os.getenv("VOICELIVE_MODEL", "gpt-4o-realtime"))
             mode = self.config.get("mode", "model")
+            connect_kwargs = {}
 
-            # Build connection model string based on mode
+            # Build connection parameters based on mode
+            extra_query = None
             if mode == "agent":
                 agent_id = self.config.get("agentId", "")
                 project_name = self.config.get("agentProjectName", "")
-                session_model = f"agent?aid={agent_id}&apn={project_name}"
+                session_model = None  # Agent scenario: model is omitted, service uses the agent's associated model
+                extra_query = {"aid": agent_id, "apn": project_name}
             elif mode == "agent-v2":
                 agent_name = self.config.get("agentName", "")
                 project_name = self.config.get("agentProjectName", "")
-                session_model = f"agent?aname={agent_name}&apn={project_name}"
+                if not agent_name or not project_name:
+                    raise ValueError("Agent v2 mode requires agentName and agentProjectName")
+
+                session_model = None
+                connect_kwargs["api_version"] = "2026-01-01-preview"
+                connect_kwargs["agent_config"] = {
+                    "agent_name": agent_name,
+                    "project_name": project_name,
+                }
             else:
                 session_model = model
 
-            logger.info(f"Connecting to Voice Live with model: {session_model}")
+            sdk_version = package_version("azure-ai-voicelive")
+            logger.info(
+                f"Connecting to Voice Live with mode: {mode}, sdk={sdk_version}, model: {session_model}, query: {extra_query}, connect_kwargs: {connect_kwargs}"
+            )
+
+            if mode == "agent-v2" and tuple(int(part) for part in sdk_version.split(".")[:2]) < (1, 2):
+                raise RuntimeError(
+                    "Agent v2 requires azure-ai-voicelive>=1.2.0b4 and the 2026-01-01-preview API. Upgrade the SDK before using agent-v2 mode."
+                )
 
             async with connect(
                 endpoint=self.endpoint,
                 credential=self.credential,
                 model=session_model,
+                query=extra_query,
+                **connect_kwargs,
             ) as connection:
                 self.connection = connection
 
@@ -114,7 +136,11 @@ class VoiceSessionHandler:
         """Configure the Voice Live session with avatar, voice, and other settings."""
         config = self.config
         mode = config.get("mode", "model")
-        model = config.get("model", "gpt-4o-realtime")
+        model = (
+            config.get("model", os.getenv("VOICELIVE_MODEL", "gpt-4o-realtime"))
+            if mode == "model"
+            else None
+        )
 
         # Build voice configuration
         voice_config = self._build_voice_config(config)
@@ -299,7 +325,7 @@ class VoiceSessionHandler:
             character = avatar_name
             style = None
         elif is_photo:
-            photo_name = config.get("photoAvatarName", "Anika")
+            photo_name = config.get("photoAvatarName") or avatar_name or "Anika"
             parts = photo_name.split("-", 1)
             character = parts[0].lower() if parts else photo_name.lower()
             style = parts[1] if len(parts) > 1 else None

@@ -331,6 +331,7 @@ function gatherConfig() {
         avatarEnabled: document.getElementById('avatarEnabled').checked,
         isPhotoAvatar: isPhotoAvatar,
         isCustomAvatar: isCustomAvatar,
+        photoAvatarName: document.getElementById('photoAvatarName')?.value,
         avatarName: isCustomAvatar
             ? document.getElementById('customAvatarName').value
             : isPhotoAvatar
@@ -399,8 +400,7 @@ async function connectSession() {
         return;
     }
     if (isAgent && !entraToken) {
-        addMessage('system', 'Please enter Entra ID Token');
-        return;
+        addMessage('system', 'Agent mode uses Entra authentication. Enter Entra ID Token, or leave it blank and ensure the backend can use DefaultAzureCredential (for example, az login).');
     }
 
     setConnecting(true);
@@ -416,7 +416,9 @@ async function connectSession() {
             // Send credentials to server
             config.endpoint = endpoint;
             if (isAgent) {
-                config.entraToken = entraToken;
+                if (entraToken) {
+                    config.entraToken = entraToken;
+                }
             } else {
                 config.apiKey = apiKey;
             }
