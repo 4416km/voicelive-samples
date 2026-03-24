@@ -396,8 +396,7 @@ async function connectSession() {
     const entraToken = document.getElementById('entraToken')?.value.trim();
 
     if (!isAgent && !apiKey) {
-        addMessage('system', 'Please enter Subscription Key');
-        return;
+        addMessage('system', 'Model mode will use the Subscription Key when provided, otherwise the backend will try DefaultAzureCredential. Make sure the backend is signed in, for example via az login.');
     }
     if (isAgent && !entraToken) {
         addMessage('system', 'Agent mode uses Entra authentication. Enter Entra ID Token, or leave it blank and ensure the backend can use DefaultAzureCredential (for example, az login).');
