@@ -25,6 +25,10 @@ let avatarOutputMode = 'webrtc';
 let cachedIceServers = null;
 let peerConnectionQueue = [];
 
+// Lap time tracking for debug mode
+let lapTimes = {};
+let lapFirstResponseReceived = false;
+
 // Volume animation state
 let analyserNode = null;
 let analyserDataArray = null;
@@ -508,8 +512,14 @@ function handleServerMessage(msg) {
         case 'audio_data':
             handleAudioDelta(msg.data);
             break;
+        case 'first_audio_arrived':
+            break;
         case 'transcript_done':
             if (msg.role === 'user') {
+                // Record STT completion time
+                if (lapTimes.speechStarted && !lapTimes.sttDone) {
+                    lapTimes.sttDone = performance.now();
+                }
                 // Update existing placeholder by itemId, or add new message
                 const itemId = msg.itemId;
                 if (itemId) {
@@ -534,10 +544,22 @@ function handleServerMessage(msg) {
             break;
         case 'transcript_delta':
             if (msg.role === 'assistant') {
+                // Record first text arrival time and show combined lap summary
+                if (lapTimes.speechStarted && !lapFirstResponseReceived) {
+                    lapFirstResponseReceived = true;
+                    lapTimes.firstResponse = performance.now();
+                    showLapSummary();
+                }
                 onAssistantDelta(msg.delta);
             }
             break;
         case 'text_delta':
+            // Record first text arrival time and show combined lap summary
+            if (lapTimes.speechStarted && !lapFirstResponseReceived) {
+                lapFirstResponseReceived = true;
+                lapTimes.firstResponse = performance.now();
+                showLapSummary();
+            }
             onAssistantDelta(msg.delta);
             break;
         case 'text_done':
@@ -562,6 +584,8 @@ function handleServerMessage(msg) {
         case 'session_closed':
             addMessage('system', 'Session closed');
             handleDisconnect();
+            break;
+        case 'audio_done':
             break;
         case 'avatar_connecting':
             addMessage('system', 'Avatar connecting...');
@@ -1465,6 +1489,9 @@ function sendTextMessage() {
 // ===== Speech Events (sound wave animation) =====
 function onSpeechStarted(itemId) {
     isSpeaking = true;
+    // Reset and start lap time tracking
+    lapTimes = { speechStarted: performance.now() };
+    lapFirstResponseReceived = false;
     // Stop assistant audio playback (barge-in) in speech-only mode
     stopAudioPlayback();
     // Add user placeholder message (will be updated when transcription completes)
@@ -1479,6 +1506,36 @@ function onSpeechStarted(itemId) {
 function onSpeechStopped() {
     pendingAssistantText = '';
     isSpeaking = false;
+    if (lapTimes.speechStarted) {
+        lapTimes.speechStopped = performance.now();
+    }
+}
+
+// ===== Lap Time Display (Developer Mode) =====
+function showLapSummary() {
+    if (!isDeveloperMode) return;
+    const t = lapTimes;
+    if (!t.speechStarted || !t.firstResponse) return;
+
+    const sttMs = t.sttDone ? t.sttDone - t.speechStarted : null;
+    const agentMs = (t.sttDone && t.firstResponse) ? t.firstResponse - t.sttDone : null;
+    const totalMs = t.firstResponse - t.speechStarted;
+
+    const fmt = (ms) => ms != null ? ms.toFixed(0) + 'ms' : '--';
+    const bar = (ms, max) => {
+        if (ms == null) return '';
+        const len = Math.max(1, Math.round((ms / max) * 20));
+        return '█'.repeat(len);
+    };
+
+    const lines = [
+        `⏱ STT: ${fmt(sttMs)}  ${bar(sttMs, totalMs)}`,
+        `⏱ Agent: ${fmt(agentMs)}  ${bar(agentMs, totalMs)}`,
+        `⏱ Total: ${fmt(totalMs)}`,
+    ];
+
+    addMessage('system', lines.join('\n'), true);
+    console.log(`[LapTime] STT=${fmt(sttMs)} Agent=${fmt(agentMs)} Total=${fmt(totalMs)}`);
 }
 
 // ===== Utilities =====

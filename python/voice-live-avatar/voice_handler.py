@@ -466,6 +466,10 @@ class VoiceSessionHandler:
 
             # Audio delta - relay to browser
             if event_type == ServerEventType.RESPONSE_AUDIO_DELTA:
+                # Notify client of the very first audio delta arrival (for lap timing)
+                if not self._first_audio_notified:
+                    self._first_audio_notified = True
+                    await self.send_message({"type": "first_audio_arrived"})
                 if hasattr(event, "delta") and event.delta:
                     audio_b64 = base64.b64encode(event.delta).decode("utf-8")
                     await self.send_message({
@@ -512,6 +516,7 @@ class VoiceSessionHandler:
 
             # Response lifecycle
             elif event_type == ServerEventType.RESPONSE_CREATED:
+                self._first_audio_notified = False
                 response_id = getattr(event, "response", None)
                 rid = response_id.id if response_id and hasattr(response_id, "id") else ""
                 await self.send_message({
@@ -693,6 +698,7 @@ class VoiceSessionHandler:
             return {"error": f"Unknown function: {name}"}
 
     _audio_chunk_count = 0
+    _first_audio_notified = False
 
     async def send_audio(self, audio_base64: str):
         """Send audio data from browser to Voice Live."""
